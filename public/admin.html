@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Visitor Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .stats-container { max-width: 1000px; margin: 0 auto; }
+        .stat-card { background: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        canvas { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="stats-container">
+        <h1>إحصائيات الزوار</h1>
+        
+        <div class="stat-card">
+            <h2>إجمالي الزيارات: <span id="totalVisits">0</span></h2>
+        </div>
+        
+        <div class="stat-card">
+            <h2>الزيارات خلال آخر 30 يوماً</h2>
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const response = await fetch('/visit-stats');
+                const data = await response.json();
+                
+                // Update total visits
+                document.getElementById('totalVisits').textContent = data.totalVisits;
+                
+                // Prepare chart data
+                const dates = data.dailyVisits.map(item => item.date);
+                const counts = data.dailyVisits.map(item => item.count);
+                
+                // Render chart
+                const ctx = document.getElementById('dailyChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'الزيارات اليومية',
+                            data: counts,
+                            backgroundColor: '#3498db',
+                            borderColor: '#2980b9',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                alert('حدث خطأ أثناء تحميل الإحصائيات');
+            }
+        }
+        
+        // Load stats when page loads
+        document.addEventListener('DOMContentLoaded', loadStats);
+    </script>
+</body>
+</html>
