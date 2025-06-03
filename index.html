@@ -570,14 +570,17 @@
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
                     
                     // Send data to backend
-                    const response = await fetch('http://localhost:3001/add-client', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
+                    const API_BASE_URL = location.hostname === 'localhost'
+                    ? 'http://localhost:3001'
+                    : 'https://byhiams-kz0tlg77a-hassens-projects-97079607.vercel.app';
+
+                    const response = await fetch(`${API_BASE_URL}/add-client`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
                     });
-                    
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
