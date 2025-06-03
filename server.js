@@ -16,14 +16,11 @@ const pool = new Pool({
 
 // Middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Blocked by CORS'));
-    }
-  }
+  origin: [
+    'http://localhost:3000',
+    'https://byhiams.vercel.app'
+  ],
+  methods: ['GET', 'POST']
 }));
 app.use(express.json());
 
@@ -50,7 +47,11 @@ app.post('/add-client', async (req, res) => {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
+// Add this before app.listen
+pool.query('SELECT NOW()', (err) => {
+  if (err) console.error('Database connection error:', err);
+  else console.log('Database connected successfully');
+});
 // Start server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
