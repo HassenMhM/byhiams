@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سخان قارورة الرضاعة محمول و كهربائي</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -80,11 +81,16 @@
             transform: scale(1.02);
         }
 
+        .photo-grid {
+            display: flex;
+            gap: 10px;
+        }
+
         .left-side,
         .right-side {
             width: 50%;
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             gap: 10px;
         }
 
@@ -103,13 +109,6 @@
             transform: scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-
-        .left::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-
 
         .right {
             flex: 1 1 50%;
@@ -341,6 +340,22 @@
             background-color: rgb(137, 216, 137);
         }
 
+        .deployment-info {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e6ed;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .deployment-info h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
         @media (max-width: 768px) {
             .body {
                 margin: 15px;
@@ -363,16 +378,16 @@
     <div class="body">
         <div class="left">
             <div class="big-photo">
-                <img src="./photos/namos.jpg" alt="Baby Bottle Warmer">
+                <img src="./photos/1.jpg" alt="Baby Bottle Warmer">
             </div>
             <div class="photo-grid">
                 <div class="left-side">
-                    <!-- <img src="./photos/2.jpg" alt="Baby Bottle Warmer Feature 1">
-                    <img src="./photos/3.jpg" alt="Baby Bottle Warmer Feature 2"> -->
+                    <img src="./photos/2.jpg" alt="Baby Bottle Warmer Feature 1">
+                    <img src="./photos/3.jpg" alt="Baby Bottle Warmer Feature 2">
                 </div>
                 <div class="right-side">
-                    <!-- <img src="./photos/4.jpg" alt="Baby Bottle Warmer Feature 3">
-                    <img src="./photos/5.jpg" alt="Baby Bottle Warmer Feature 4"> -->
+                    <img src="./photos/4.jpg" alt="Baby Bottle Warmer Feature 3">
+                    <img src="./photos/5.jpg" alt="Baby Bottle Warmer Feature 4">
                 </div>
             </div>
         </div>
@@ -501,6 +516,14 @@
         <span>تم تقديم طلبك بنجاح!</span>
     </div>
     
+    <div class="deployment-info">
+        <h3>Deployment Information</h3>
+        <p><strong>Frontend:</strong> Vercel (Static Hosting)</p>
+        <p><strong>Backend:</strong> Node.js Server on Vercel</p>
+        <p><strong>Database:</strong> PostgreSQL on Neon.tech</p>
+        <p><strong>Connection:</strong> Serverless API endpoints connecting to Neon DB</p>
+    </div>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const officeBtn = document.getElementById('officeDelivery');
@@ -569,23 +592,12 @@
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
                     
-                    // Send data to backend
-                    const API_BASE_URL = location.hostname === 'localhost'
-                    ? 'http://localhost:3001'
-                    : 'https://byhiams-kz0tlg77a-hassens-projects-97079607.vercel.app';
-
-                    const response = await fetch(`${API_BASE_URL}/add-client`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                    });
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
+                    // Get the base URL for the API
+                    // This will automatically work on Vercel
+                    const API_BASE_URL = window.location.origin;
                     
-                    const data = await response.json();
+                    // Send data to backend
+                    const response = await axios.post(`${API_BASE_URL}/add-client`, formData);
                     
                     // Show success message
                     showToast('تم تقديم طلبك بنجاح!', 'success');

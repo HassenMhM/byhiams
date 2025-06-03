@@ -1,18 +1,36 @@
+require('dotenv').config();
 const express = require('express');
-const pool = require('./db');
-const app = express();
+const { Pool } = require('pg');
 const cors = require('cors');
-app.use(cors());
+const path = require('path');
 
+const app = express();
+
+// Create PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+// Middleware
 app.use(cors({
-  origin: [
-    'http://127.0.0.1:5500',       // local dev
-    'https://byhiams-kz0tlg77a-hassens-projects-97079607.vercel.app'   // production
-  ]
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Blocked by CORS'));
+    }
+  }
 }));
-
 app.use(express.json());
 
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// API endpoint to add client
 app.post('/add-client', async (req, res) => {
   const { name, email, phone, wilaya, address, delivery } = req.body;
 
@@ -23,10 +41,18 @@ app.post('/add-client', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Database error');
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Database error' });
   }
 });
-app.listen(3001, () => {
-  console.log('Server is running on port 3001');
+
+// Root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
