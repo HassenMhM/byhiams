@@ -32,7 +32,7 @@
                 const data = await response.json();
                 
                 // Update total visits
-                document.getElementById('totalVisits').textContent = data.totalVisits/2;
+                document.getElementById('totalVisits').textContent = data.totalVisits-1;
                 
                 // Prepare chart data
                 const dates = data.dailyVisits.map(item => item.date);
