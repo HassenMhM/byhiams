@@ -2,76 +2,496 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Visitor Statistics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصائيات زوار الصفحة الرئيسية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .stats-container { max-width: 1000px; margin: 0 auto; }
-        .stat-card { background: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        canvas { margin-top: 20px; }
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f4f8 0%, #e6eef7 100%);
+            color: #334155;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .header-title i {
+            font-size: 2rem;
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .refresh-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+
+        .refresh-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border-left: 5px solid var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stat-title {
+            font-size: 1.1rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            background: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--dark);
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-subtitle {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 40px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .chart-subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-top: 5px;
+        }
+
+        .chart-canvas-container {
+            height: 350px;
+            width: 100%;
+            position: relative;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            color: #64748b;
+        }
+
+        /* Database Info */
+        .db-info {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .db-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .db-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .db-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(76, 201, 240, 0.1);
+            color: #4cc9f0;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .db-status i {
+            font-size: 0.8rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            
+            .stat-value {
+                font-size: 2.2rem;
+            }
+            
+            .chart-canvas-container {
+                height: 300px;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <div class="stats-container">
-        <h1>إحصائيات الزوار</h1>
-        
-        <div class="stat-card">
-            <h2>إجمالي الزيارات: <span id="totalVisits">0</span></h2>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-title">
+                <i class="fas fa-chart-line"></i>
+                <div>
+                    <h1>إحصائيات زوار الصفحة الرئيسية</h1>
+                    <p>إحصائيات حصرية لصفحة المنتج الرئيسية</p>
+                </div>
+            </div>
+            <button class="refresh-btn" id="refreshData">
+                <i class="fas fa-sync-alt"></i>
+                تحديث البيانات
+            </button>
         </div>
-        
-        <div class="stat-card">
-            <h2>الزيارات خلال آخر 30 يوماً</h2>
-            <canvas id="dailyChart"></canvas>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-title">إجمالي الزيارات</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalVisits">0</div>
+                <div class="stat-subtitle">الزيارات الكلية للصفحة الرئيسية</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-title">زيارات اليوم</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="todayVisits">0</div>
+                <div class="stat-subtitle">الزيارات خلال آخر 24 ساعة</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-title">المتوسط اليومي</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="avgDaily">0</div>
+                <div class="stat-subtitle">متوسط الزيارات اليومية</div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title">اتجاهات الزيارات</div>
+                    <div class="chart-subtitle">الزيارات اليومية خلال آخر 30 يوم</div>
+                </div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas id="visitorChart"></canvas>
+                <div class="loading" id="chartLoading">جاري تحميل البيانات...</div>
+            </div>
+        </div>
+
+        <!-- Database Info -->
+        <div class="db-info">
+            <div class="db-header">
+                <div class="db-title">اتصال قاعدة البيانات</div>
+                <div class="db-status">
+                    <i class="fas fa-circle"></i>
+                    <span>متصل بقاعدة بيانات Neon PostgreSQL</span>
+                </div>
+            </div>
+            <div style="margin-top: 15px; color: #64748b;">
+                <p>يتم عد الزيارات للصفحة الرئيسية فقط (الصفحة التي تحتوي على المنتج)، ولا يتم عد زيارات صفحة الإدارة.</p>
+            </div>
         </div>
     </div>
 
     <script>
-        async function loadStats() {
-            try {
-                const response = await fetch('/visit-stats');
-                const data = await response.json();
-                
-                // Update total visits
-                document.getElementById('totalVisits').textContent = data.totalVisits-1;
-                
-                // Prepare chart data
-                const dates = data.dailyVisits.map(item => item.date);
-                const counts = data.dailyVisits.map(item => item.count);
-                
-                // Render chart
-                const ctx = document.getElementById('dailyChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: dates,
-                        datasets: [{
-                            label: 'الزيارات اليومية',
-                            data: counts,
-                            backgroundColor: '#3498db',
-                            borderColor: '#2980b9',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
+        // DOM Elements
+        const totalVisitsEl = document.getElementById('totalVisits');
+        const todayVisitsEl = document.getElementById('todayVisits');
+        const avgDailyEl = document.getElementById('avgDaily');
+        const refreshBtn = document.getElementById('refreshData');
+        const chartLoading = document.getElementById('chartLoading');
+        
+        // Chart initialization
+        const ctx = document.getElementById('visitorChart').getContext('2d');
+        let visitorChart = null;
+        
+        // Initialize chart with empty data
+        function initChart() {
+            if (visitorChart) {
+                visitorChart.destroy();
+            }
+            
+            visitorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'الزيارات اليومية',
+                        data: [],
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        borderWidth: 4,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#4361ee',
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 15,
+                            titleFont: {
+                                size: 16
+                            },
+                            bodyFont: {
+                                size: 14
+                            },
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
+                                label: function(context) {
+                                    return `الزيارات: ${context.parsed.y}`;
                                 }
                             }
                         }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                },
+                                callback: function(value) {
+                                    if (value % 1 === 0) {
+                                        return value;
+                                    }
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
                     }
-                });
+                }
+            });
+        }
+        
+        // Format numbers with Arabic formatting
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ar-EG').format(num);
+        }
+        
+        // Fetch visitor data from the server
+        async function fetchVisitorData() {
+            try {
+                chartLoading.style.display = 'block';
+                
+                // Call your visit-stats endpoint
+                const response = await fetch('/visit-stats');
+                const data = await response.json();
+                
+                // Update stats
+                totalVisitsEl.textContent = formatNumber(data.totalVisits);
+                todayVisitsEl.textContent = formatNumber(data.todayVisits);
+                avgDailyEl.textContent = formatNumber(data.avgDaily);
+                
+                // Update chart
+                updateChart(data.dailyVisits);
+                
             } catch (error) {
-                console.error('Error loading stats:', error);
-                alert('حدث خطأ أثناء تحميل الإحصائيات');
+                console.error('Error fetching visitor data:', error);
+                alert('حدث خطأ أثناء تحميل البيانات. الرجاء المحاولة مرة أخرى.');
+            } finally {
+                chartLoading.style.display = 'none';
             }
         }
         
-        // Load stats when page loads
-        document.addEventListener('DOMContentLoaded', loadStats);
+        // Update the chart with new data
+        function updateChart(dailyVisits) {
+            const dates = dailyVisits.map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+            });
+            
+            const counts = dailyVisits.map(item => item.count);
+            
+            visitorChart.data.labels = dates;
+            visitorChart.data.datasets[0].data = counts;
+            visitorChart.update();
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            fetchVisitorData();
+            
+            // Refresh data button
+            refreshBtn.addEventListener('click', fetchVisitorData);
+        });
     </script>
 </body>
 </html>
