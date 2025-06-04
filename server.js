@@ -61,90 +61,58 @@ app.listen(PORT, () => {
 const ip = require('ip');
 
 // Visit tracking middleware
-// Middleware to track visits only to the client page
 app.use(async (req, res, next) => {
-    // Only track visits to the root path (client page)
-    if (req.path === '/' && req.method === 'GET') {
-        try {
-            const ip = req.ip || req.connection.remoteAddress;
-            await pool.query(
-                'INSERT INTO site_visits (ip_address, user_agent, path) VALUES ($1, $2, $3)',
-                [ip, req.headers['user-agent'], req.path]
-            );
-        } catch (err) {
-            console.error('Visit tracking error:', err);
-        }
+    try {
+        await pool.query(
+            'INSERT INTO site_visits (ip_address, user_agent, path) VALUES ($1, $2, $3)',
+            [req.ip || ip.address(), req.headers['user-agent'], req.path]
+        );
+    } catch (err) {
+        console.error('Visit tracking error:', err);
     }
     next();
 });
 
-// Visit stats endpoint (client page only)
+// Endpoint to get visit counts
 app.get('/visit-stats', async (req, res) => {
     try {
-        // Get total visits to client page only
-        const totalResult = await pool.query(
-            "SELECT COUNT(*) FROM site_visits WHERE path = '/'"
-        );
-        const totalVisits = parseInt(totalResult.rows[0].count);
+        const totalResult = await pool.query('SELECT COUNT(*) FROM site_visits');
+        const dailyResult = await pool.query(`
+            SELECT DATE(visit_time) AS date, COUNT(*) 
+            FROM site_visits 
+            GROUP BY date
+            ORDER BY date DESC
+            LIMIT 30
+        `);
         
-        // Get today's visits to client page only
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
-        
-        const todayResult = await pool.query(
-            "SELECT COUNT(*) FROM site_visits WHERE path = '/' AND visit_time >= $1 AND visit_time <= $2",
-            [todayStart, todayEnd]
-        );
-        const todayVisits = parseInt(todayResult.rows[0].count);
-        
-        // Get daily visits for last 30 days (client page only)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const dailyResult = await pool.query(
-            "SELECT DATE(visit_time) AS date, COUNT(*) " +
-            "FROM site_visits " +
-            "WHERE path = '/' AND visit_time >= $1 " +
-            "GROUP BY date " +
-            "ORDER BY date ASC",
-            [thirtyDaysAgo]
-        );
-        
-        // Fill in missing days with 0
-        const dailyVisits = [];
-        const today = new Date();
-        for (let i = 29; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(today.getDate() - i);
-            const dateString = date.toISOString().split('T')[0];
-            
-            const found = dailyResult.rows.find(row => 
-                new Date(row.date).toISOString().split('T')[0] === dateString
-            );
-            
-            dailyVisits.push({
-                date: dateString,
-                count: found ? parseInt(found.count) : 0
-            });
-        }
-        
-        // Calculate average daily visits
-        const totalDays = dailyVisits.length;
-        const totalVisitsPeriod = dailyVisits.reduce((sum, day) => sum + day.count, 0);
-        const avgDaily = Math.round(totalVisitsPeriod / totalDays);
-        
-        // Prepare response
         res.json({
-            totalVisits,
-            todayVisits,
-            avgDaily,
-            dailyVisits
+            totalVisits: totalResult.rows[0].count,
+            dailyVisits: dailyResult.rows
         });
-        
-    } catch (error) {
-        console.error('Error fetching visit stats:', error);
-        res.status(500).json({ error: 'Internal server error' });
+    } catch (err) {
+        console.error('Visit stats error:', err);
+        res.status(500).json({ error: 'Database error' });
     }
+});
+// Add to server.js
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+// Add to server.js
+const basicAuth = require('basic-auth');
+
+// Admin credentials (store in .env in production)
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'password';
+
+// Admin authentication middleware
+app.use('/admin', (req, res, next) => {
+    const user = basicAuth(req);
+    
+    if (!user || user.name !== ADMIN_USER || user.pass !== ADMIN_PASS) {
+        res.set('WWW-Authenticate', 'Basic realm="Admin Area"');
+        return res.status(401).send('Authentication required');
+    }
+    
+    next();
 });
